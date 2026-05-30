@@ -215,8 +215,8 @@ def screen_minervini_stocks(tickers):
 @requires_auth
 def index():
     universe = get_us_large_cap_tickers(min_market_cap=3_000_000_000)
-    # Screen a smaller subset to keep the page responsive. The full universe is large.
-    subset = universe[:50]
+    # Screen a larger subset to include more tickers while still keeping the page responsive.
+    subset = universe[:600]
     results = screen_minervini_stocks(subset)
     return render_template("index.html", stocks=results)
 
