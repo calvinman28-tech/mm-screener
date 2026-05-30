@@ -229,7 +229,7 @@ def screen_minervini_stocks(tickers):
 def index():
     universe = get_us_large_cap_tickers(min_market_cap=3_000_000_000)
     # Keep the page responsive by screening only the highest market-cap tickers first.
-    subset = filter_large_cap_tickers(universe, min_market_cap=3_000_000_000, max_tickers=200)
+    subset = filter_large_cap_tickers(universe, min_market_cap=3_000_000_000, max_tickers=600)
     results = screen_minervini_stocks(subset)
     return render_template("index.html", stocks=results)
 
