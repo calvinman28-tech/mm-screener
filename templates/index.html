@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minervini Trend Template Screener</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+    <style>
+        body { background-color: #f8f9fa; font-family: sans-serif; }
+        .screener-box {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            padding: 30px;
+            margin-top: 40px;
+        }
+        .criteria-badge { font-size: 0.85rem; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="screener-box">
+        <h2 class="text-primary mb-3 text-center">📈 US Stock Screener</h2>
+        <h5 class="text-muted text-center mb-4">Mark Minervini Trend Template Results</h5>
+        
+        <div class="alert alert-info" role="alert">
+            <strong>Active Rules applied:</strong> Price > 50, 150, 200 SMAs | 150 SMA > 200 SMA | 200 SMA trending up (1mo) | Within 25% of 52W High | Within 30%+ of 52W Low.
+        </div>
+
+        {% if stocks %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Ticker</th>
+                        <th>Current Price</th>
+                        <th>50 SMA</th>
+                        <th>150 SMA</th>
+                        <th>200 SMA</th>
+                        <th>52W Low</th>
+                        <th>52W High</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in stocks %}
+                    <tr>
+                        <td><strong>{{ stock.Ticker }}</strong></td>
+                        <td class="text-success">${{ stock.Price }}</td>
+                        <td>${{ stock.SMA_50 }}</td>
+                        <td>${{ stock.SMA_150 }}</td>
+                        <td>${{ stock.SMA_200 }}</td>
+                        <td>${{ stock['52W_Low'] }}</td>
+                        <td>${{ stock['52W_High'] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <p class="text-muted fs-5">No stocks from the current watchlist met all Trend Template criteria today.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+</body>
+</html>
