@@ -98,6 +98,19 @@ def get_market_cap(ticker):
     return market_cap
 
 
+def filter_large_cap_tickers(tickers, min_market_cap=3_000_000_000, max_tickers=200):
+    large_caps = []
+    for ticker in tickers:
+        market_cap = get_market_cap(ticker)
+        if market_cap is None:
+            continue
+        if market_cap >= min_market_cap:
+            large_caps.append((ticker, market_cap))
+
+    large_caps.sort(key=lambda item: item[1], reverse=True)
+    return [ticker for ticker, _ in large_caps[:max_tickers]]
+
+
 def get_us_large_cap_tickers(min_market_cap=3_000_000_000):
     global _UNIVERSE_CACHE
     if _UNIVERSE_CACHE is None:
@@ -215,8 +228,8 @@ def screen_minervini_stocks(tickers):
 @requires_auth
 def index():
     universe = get_us_large_cap_tickers(min_market_cap=3_000_000_000)
-    # Screen a larger subset to include more tickers while still keeping the page responsive.
-    subset = universe[:600]
+    # Keep the page responsive by screening only the highest market-cap tickers first.
+    subset = filter_large_cap_tickers(universe, min_market_cap=3_000_000_000, max_tickers=200)
     results = screen_minervini_stocks(subset)
     return render_template("index.html", stocks=results)
 
