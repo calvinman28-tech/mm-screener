@@ -228,9 +228,9 @@ def screen_minervini_stocks(tickers):
 @requires_auth
 def index():
     universe = get_us_large_cap_tickers(min_market_cap=3_000_000_000)
-    # Keep the page responsive by screening only the highest market-cap tickers first.
-    # Using 200 avoids long request times and internal server errors on Render.
-    subset = filter_large_cap_tickers(universe, min_market_cap=3_000_000_000, max_tickers=200)
+    # Use a simpler approach: screen the first 200 alphabetic tickers from the universe.
+    # This avoids extra market cap API calls that could timeout on Render.
+    subset = universe[:200]
     results = screen_minervini_stocks(subset)
     return render_template("index.html", stocks=results)
 
