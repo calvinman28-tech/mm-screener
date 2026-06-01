@@ -183,6 +183,72 @@ def screen_minervini_stocks(tickers):
             # 200-day SMA value from 20 trading days ago (~1 month)
             sma_200_20d_ago = df["SMA_200"].iloc[-20]
 
+            # 2. Fundamental checks (best-effort) before applying Mark Minervini's Template
+            try:
+                yf_ticker = yf.Ticker(ticker)
+                info = getattr(yf_ticker, "info", None) or {}
+
+                # Annual EPS growth (proxy): attempt to compute CAGR from annual 'earnings' if available
+                eps_growth = None
+                try:
+                    earnings_df = getattr(yf_ticker, "earnings", None)
+                    if earnings_df is not None and not earnings_df.empty and "Earnings" in earnings_df.columns:
+                        vals = earnings_df["Earnings"].dropna().values
+                        if len(vals) >= 4:
+                            first = float(vals[-4])
+                            last = float(vals[-1])
+                            if first > 0:
+                                eps_growth = (last / first) ** (1.0 / 3.0) - 1.0
+                except Exception:
+                    eps_growth = None
+
+                # Fallback: try info fields (quarterly growth proxy)
+                if eps_growth is None:
+                    e_q_growth = info.get("earningsQuarterlyGrowth")
+                    if e_q_growth is not None:
+                        try:
+                            # approximate annualized value from quarterly growth if available
+                            eps_growth = float(e_q_growth)
+                        except Exception:
+                            eps_growth = None
+
+                if eps_growth is None:
+                    eps_growth = -9.0
+
+                # Sales growth: prefer 'revenueGrowth' from info, else infer from quarterly_financials
+                sales_growth = None
+                try:
+                    rg = info.get("revenueGrowth")
+                    if rg is not None:
+                        sales_growth = float(rg)
+                    else:
+                        q_fin = getattr(yf_ticker, "quarterly_financials", None)
+                        if q_fin is not None and not q_fin.empty:
+                            # try common revenue row keys
+                            for key in ["Total Revenue", "Revenue", "totalRevenue", "TotalRevenue"]:
+                                if key in q_fin.index:
+                                    rev_row = q_fin.loc[key]
+                                    cols = list(rev_row.index)
+                                    if len(cols) >= 5:
+                                        latest = float(rev_row.iloc[0])
+                                        prev_year = float(rev_row.iloc[4])
+                                        if prev_year != 0:
+                                            sales_growth = (latest - prev_year) / abs(prev_year)
+                                    break
+                except Exception:
+                    sales_growth = None
+
+                if sales_growth is None:
+                    sales_growth = -9.0
+
+                # Apply thresholds: EPS growth >= 15% (0.15), sales growth >= 15% (0.15)
+                if eps_growth < 0.15 or sales_growth < 0.15:
+                    # skip ticker if fundamentals don't meet criteria
+                    continue
+            except Exception as exc:
+                print(f"Fundamental check failed for {ticker}: {exc}")
+                continue
+
             # 2. Evaluate Mark Minervini's Template Criteria
             cond_1 = (current_price > sma_150) and (current_price > sma_200)
             cond_2 = sma_150 > sma_200
@@ -228,9 +294,9 @@ def screen_minervini_stocks(tickers):
 @requires_auth
 def index():
     universe = get_us_large_cap_tickers(min_market_cap=3_000_000_000)
-    # Use a simpler approach: screen the first 200 alphabetic tickers from the universe.
-    # This avoids extra market cap API calls that could timeout on Render.
-    subset = universe[:200]
+    # Keep the page responsive by screening only the highest market-cap tickers first.
+    # Using 200 avoids long request times and internal server errors on Render.
+    subset = filter_large_cap_tickers(universe, min_market_cap=3_000_000_000, max_tickers=200)
     results = screen_minervini_stocks(subset)
     return render_template("index.html", stocks=results)
 
